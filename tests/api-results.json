@@ -1,0 +1,149 @@
+{
+  "time": "2026-09-24T15:23:14.318Z",
+  "results": [
+    {
+      "name": "初始化保存班级与三个情景任务",
+      "status": "PASS"
+    },
+    {
+      "name": "重复读取不重复初始化数据",
+      "status": "PASS"
+    },
+    {
+      "name": "不同账户隔离作业、草稿和班级",
+      "status": "PASS"
+    },
+    {
+      "name": "未加入班级不可写入教师任务",
+      "status": "PASS"
+    },
+    {
+      "name": "无效班级码返回可读错误",
+      "status": "PASS"
+    },
+    {
+      "name": "学生加入班级并读取任务",
+      "status": "PASS"
+    },
+    {
+      "name": "重复加入保持唯一成员",
+      "status": "PASS"
+    },
+    {
+      "name": "学生不能发布他人班级任务",
+      "status": "PASS"
+    },
+    {
+      "name": "拒绝不合计100分的评分权重",
+      "status": "PASS"
+    },
+    {
+      "name": "拒绝缺失任务标题",
+      "status": "PASS"
+    },
+    {
+      "name": "拒绝过去的截止时间",
+      "status": "PASS"
+    },
+    {
+      "name": "教师发布任务，学生可见",
+      "status": "PASS"
+    },
+    {
+      "name": "草稿写入数据库并跨请求恢复",
+      "status": "PASS"
+    },
+    {
+      "name": "其他学生不能读取草稿",
+      "status": "PASS"
+    },
+    {
+      "name": "空作业与过短作业禁止提交",
+      "status": "PASS"
+    },
+    {
+      "name": "超过两万字禁止提交",
+      "status": "PASS"
+    },
+    {
+      "name": "规则识别文种混用和口语化，定位准确",
+      "status": "PASS"
+    },
+    {
+      "name": "提交作业保存原文及检查报告",
+      "status": "PASS"
+    },
+    {
+      "name": "相同提交编号重试不重复创建版本",
+      "status": "PASS"
+    },
+    {
+      "name": "同编号不同内容不误报提交成功",
+      "status": "PASS"
+    },
+    {
+      "name": "同班其他学生不能读取提交",
+      "status": "PASS"
+    },
+    {
+      "name": "班级教师可以读取本班作业",
+      "status": "PASS"
+    },
+    {
+      "name": "学生不能越权评分",
+      "status": "PASS"
+    },
+    {
+      "name": "超过维度满分的评分被拒绝",
+      "status": "PASS"
+    },
+    {
+      "name": "退回必须说明修改原因",
+      "status": "PASS"
+    },
+    {
+      "name": "教师退回，学生看见修改要求",
+      "status": "PASS"
+    },
+    {
+      "name": "修改重交保留旧原稿与新版本",
+      "status": "PASS"
+    },
+    {
+      "name": "教师五维复核分数和评语保存",
+      "status": "PASS"
+    },
+    {
+      "name": "客观题正确答案自动判分",
+      "status": "PASS"
+    },
+    {
+      "name": "客观题错误答案返回解释并记录",
+      "status": "PASS"
+    },
+    {
+      "name": "未知题目拒绝判分",
+      "status": "PASS"
+    },
+    {
+      "name": "教师新增素材在班级共享",
+      "status": "PASS"
+    },
+    {
+      "name": "学生不能修改他人班级素材",
+      "status": "PASS"
+    },
+    {
+      "name": "跨来源写请求被拒绝",
+      "status": "PASS"
+    },
+    {
+      "name": "无效JSON得到400",
+      "status": "PASS"
+    },
+    {
+      "name": "JSON空值被拒绝且服务不崩溃",
+      "status": "PASS"
+    }
+  ]
+}

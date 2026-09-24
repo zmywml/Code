@@ -1,0 +1,106 @@
+{
+  "time": "2026-09-24T15:24:31.947Z",
+  "results": [
+    {
+      "name": "桌面首页加载，显示真实空档案和任务",
+      "status": "PASS"
+    },
+    {
+      "name": "知识库检索与空结果",
+      "status": "PASS"
+    },
+    {
+      "name": "病文分类与详情弹窗",
+      "status": "PASS"
+    },
+    {
+      "name": "写作工作台打开，三栏可操作",
+      "status": "PASS"
+    },
+    {
+      "name": "输入正文后自动保存",
+      "status": "PASS"
+    },
+    {
+      "name": "离开后重进可恢复草稿",
+      "status": "PASS"
+    },
+    {
+      "name": "规则批注定位及采纳替换",
+      "status": "PASS"
+    },
+    {
+      "name": "版式预览与返回编辑保留内容",
+      "status": "PASS"
+    },
+    {
+      "name": "分级引导三步展开",
+      "status": "PASS"
+    },
+    {
+      "name": "提交作业进入档案",
+      "status": "PASS"
+    },
+    {
+      "name": "教师退回重做，学生看到评语",
+      "status": "PASS"
+    },
+    {
+      "name": "修改重交保留两个独立版本",
+      "status": "PASS"
+    },
+    {
+      "name": "教师填写五维分数并保存复核",
+      "status": "PASS"
+    },
+    {
+      "name": "旧版本可补评并形成同任务成绩曲线",
+      "status": "PASS"
+    },
+    {
+      "name": "学习档案展示评分和推荐练习",
+      "status": "PASS"
+    },
+    {
+      "name": "阶段报告实际下载",
+      "status": "PASS"
+    },
+    {
+      "name": "客观题答错和正确反馈均可显示",
+      "status": "PASS"
+    },
+    {
+      "name": "教师发布任务表单可提交并展示",
+      "status": "PASS"
+    },
+    {
+      "name": "资源文件上传保存后可检索",
+      "status": "PASS"
+    },
+    {
+      "name": "刷新保留数据库记录",
+      "status": "PASS"
+    },
+    {
+      "name": "390px手机视图无整页横向溢出",
+      "status": "PASS"
+    },
+    {
+      "name": "移动端侧栏可打开并导航",
+      "status": "PASS"
+    },
+    {
+      "name": "手机写作界面无横向溢出且可编辑",
+      "status": "PASS"
+    },
+    {
+      "name": "保存服务失败时保留正文并允许重试",
+      "status": "PASS"
+    },
+    {
+      "name": "全过程无浏览器运行时异常",
+      "status": "PASS"
+    }
+  ],
+  "errors": []
+}
