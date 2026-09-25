@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "wenxu-writing-lab",
+  "main": "dist/server/index.js",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "assets": {
+    "directory": "dist/client"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "wenxu-writing-lab-production",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "vars": {
+    "CF_ACCESS_TEAM_DOMAIN": "REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
+    "CF_ACCESS_AUD": "REPLACE_WITH_ACCESS_APPLICATION_AUD"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
