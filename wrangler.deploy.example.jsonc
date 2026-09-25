@@ -17,8 +17,8 @@
     }
   ],
   "vars": {
-    "CF_ACCESS_TEAM_DOMAIN": "REPLACE_WITH_TEAM_NAME.cloudflareaccess.com",
-    "CF_ACCESS_AUD": "REPLACE_WITH_ACCESS_APPLICATION_AUD"
+    "SILICONFLOW_BASE_URL": "https://api.siliconflow.cn/v1",
+    "SILICONFLOW_MODEL": "deepseek-ai/DeepSeek-V4-Flash"
   },
   "observability": {
     "enabled": true

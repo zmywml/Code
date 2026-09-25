@@ -5,5 +5,8 @@ declare namespace Cloudflare {
     LOCAL_PREVIEW?: string;
     APP_SESSION_SECRET?: string;
     TEACHER_ACCESS_CODE?: string;
+    SILICONFLOW_API_KEY?: string;
+    SILICONFLOW_BASE_URL?: string;
+    SILICONFLOW_MODEL?: string;
   }
 }

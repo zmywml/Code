@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+const base=process.env.TEST_URL||'http://127.0.0.1:8790',code=process.env.TEST_TEACHER_CODE;
+assert.ok(code,'TEST_TEACHER_CODE is required');
+const login=await fetch(base+'/api/lab',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'login',role:'teacher',name:'AI测试教师',accessCode:code})});
+assert.equal(login.status,200,await login.text());const cookie=login.headers.get('set-cookie')?.split(';')[0];assert.ok(cookie);
+const bootstrap=await fetch(base+'/api/lab',{headers:{cookie}});const data=await bootstrap.json();assert.equal(bootstrap.status,200,JSON.stringify(data));assert.equal(data.aiReady,true);
+const content='关于特大暴雨灾害问题的调研报告\n\n区有关部门：\n6月18日暴雨后，调研组走访三个社区24户居民，并检查排水设施。18户居民反映排水口堵塞，两个地下车库进水。经分析，主要问题是部分排水口清理不及时，应急巡查还不够细致。建议建立雨前排查台账，明确社区和物业责任，及时清理堵塞点，并对地下车库防汛设施开展专项检查。\n\n青禾区调研组\n2026年9月25日';
+const request=()=>fetch(base+'/api/lab',{method:'POST',headers:{cookie,'content-type':'application/json'},body:JSON.stringify({action:'aiCheck',task:data.tasks[0].id,content})});
+const first=await request(),report=await first.json();assert.equal(first.status,200,JSON.stringify(report));assert.equal(report.mode,'ai');assert.equal(report.model,'deepseek-ai/DeepSeek-V4-Flash');assert.equal(report.scores.length,5);assert.ok(report.summary);assert.ok(report.issues.every(x=>!x.quote||content.includes(x.quote)));
+const second=await request(),cached=await second.json();assert.equal(second.status,200,JSON.stringify(cached));assert.equal(cached.cached,true);
+console.log(`PASS AI语义批改：5维评分、${report.issues.length}条问题、重复请求命中缓存`);
