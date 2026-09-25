@@ -1,60 +1,41 @@
 import { env } from "cloudflare:workers";
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { jwtVerify, SignJWT } from "jose";
 
-export type AuthenticatedUser = { id: string; name: string };
+export type AuthenticatedUser = { id: string; name: string; role: "teacher" | "student"; classroom?: string };
+type RuntimeEnv = Cloudflare.Env & { LOCAL_PREVIEW?: string; APP_SESSION_SECRET?: string };
+const COOKIE = "wenxu_session", maxAge = 60 * 60 * 24 * 7;
 
-type RuntimeEnv = Cloudflare.Env & {
-  LOCAL_PREVIEW?: string;
-  CF_ACCESS_TEAM_DOMAIN?: string;
-  CF_ACCESS_AUD?: string;
-};
-
-const keySets = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
-
-function accessKeySet(teamDomain: string) {
-  let keySet = keySets.get(teamDomain);
-  if (!keySet) {
-    keySet = createRemoteJWKSet(
-      new URL(`https://${teamDomain}/cdn-cgi/access/certs`),
-    );
-    keySets.set(teamDomain, keySet);
-  }
-  return keySet;
+function secret() {
+  const value = (env as RuntimeEnv).APP_SESSION_SECRET?.trim();
+  if (!value || value.length < 32) throw new Error("APP_SESSION_SECRET 未配置或长度不足");
+  return new TextEncoder().encode(value);
 }
 
-export async function authenticatedUser(
-  request: Request,
-): Promise<AuthenticatedUser | null> {
+function cookies(request: Request) {
+  return Object.fromEntries((request.headers.get("cookie") || "").split(";").map(part => { const value=part.trim(),at=value.indexOf("=");return at<0?[value,""]:[value.slice(0,at),value.slice(at+1)]; }).filter(([key]) => key));
+}
+
+export async function authenticatedUser(request: Request): Promise<AuthenticatedUser | null> {
   const runtime = env as RuntimeEnv;
-
-  if (runtime.LOCAL_PREVIEW === "true") {
-    const id = request.headers.get("x-preview-user") || "preview-owner";
-    return { id, name: id };
+  if (runtime.LOCAL_PREVIEW === "true" && request.headers.get("x-preview-user")) {
+    const id = request.headers.get("x-preview-user")!;
+    return { id, name: id, role: "teacher" };
   }
-
-  const sitesUserId = request.headers.get("oai-authenticated-user-id");
-  const sitesEmail = request.headers.get("oai-authenticated-user-email");
-  if (sitesUserId && sitesEmail) return { id: sitesUserId, name: sitesEmail };
-
-  const teamDomain = runtime.CF_ACCESS_TEAM_DOMAIN?.trim();
-  const audience = runtime.CF_ACCESS_AUD?.trim();
-  const assertion = request.headers.get("cf-access-jwt-assertion");
-  if (!teamDomain || !audience || !assertion) return null;
-
+  const token = cookies(request)[COOKIE];
+  if (!token) return null;
   try {
-    const { payload } = await jwtVerify(assertion, accessKeySet(teamDomain), {
-      issuer: `https://${teamDomain}`,
-      audience,
-    });
-    const id = typeof payload.sub === "string" ? payload.sub : null;
-    const email = typeof payload.email === "string" ? payload.email : null;
-    if (!id || !email) return null;
-    return { id: `cf-access:${id}`, name: email };
-  } catch (error) {
-    console.error(
-      "access-jwt-verification-failed",
-      error instanceof Error ? error.message : "unknown error",
-    );
-    return null;
-  }
+    const { payload } = await jwtVerify(token, secret(), { audience: "wenxu-lab", issuer: "wenxu" });
+    if (typeof payload.sub !== "string" || typeof payload.name !== "string" || (payload.role !== "teacher" && payload.role !== "student")) return null;
+    return { id: payload.sub, name: payload.name, role: payload.role, classroom: typeof payload.classroom === "string" ? payload.classroom : undefined };
+  } catch { return null; }
+}
+
+export async function sessionCookie(user: AuthenticatedUser) {
+  const token = await new SignJWT({ name: user.name, role: user.role, classroom: user.classroom }).setProtectedHeader({ alg: "HS256" }).setSubject(user.id).setIssuer("wenxu").setAudience("wenxu-lab").setIssuedAt().setExpirationTime(`${maxAge}s`).sign(secret());
+  return `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
+}
+export const clearSessionCookie = () => `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
+export async function stableStudentId(classroom: string, studentNo: string) {
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${classroom}:${studentNo}`));
+  return `student:${Array.from(new Uint8Array(bytes)).map(n => n.toString(16).padStart(2, "0")).join("").slice(0, 32)}`;
 }

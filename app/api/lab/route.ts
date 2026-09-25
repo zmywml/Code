@@ -2,13 +2,13 @@ import { env } from 'cloudflare:workers';
 import { database } from '@/db/raw';
 import { seedTasks, questions, genres } from '@/lib/content';
 import { checkWriting, validateRubric, validateScores } from '@/lib/review';
-import { authenticatedUser } from '@/lib/identity';
+import { authenticatedUser,clearSessionCookie,sessionCookie,stableStudentId } from '@/lib/identity';
 export const dynamic='force-dynamic';
 type Row=Record<string,any>;
 class HttpError extends Error {constructor(public status:number,message:string){super(message);}}
 const now=()=>new Date().toISOString();
 const uid=()=>crypto.randomUUID();
-async function identity(req:Request){const user=await authenticatedUser(req);if(!user)throw new HttpError(401,'请通过 Cloudflare Access 登录后使用学习空间。');return user;}
+async function identity(req:Request){const user=await authenticatedUser(req);if(!user)throw new HttpError(401,'请先登录学习空间。');return user;}
 function str(v:unknown,label:string,max=20000){if(typeof v!=='string'||!v.trim()||v.length>max)throw new HttpError(400,`${label}不能为空，且不得超过 ${max} 字。`);return v.trim();}
 const parse=(r:Row)=>({...r,...(r.rubric?{rubric:JSON.parse(r.rubric)}:{}),...(r.report?{report:JSON.parse(r.report)}:{}),...(r.scores?{scores:JSON.parse(r.scores)}:{})});
 async function init(id:string,name:string){const db=database();const classroom=`class-${id}`;const existing=await db.prepare('SELECT id FROM classrooms WHERE id=?').bind(classroom).first();if(existing)return;
@@ -26,10 +26,20 @@ async function getData(id:string){const db=database();const [classes,tasks,draft
  db.prepare('SELECT m.* FROM members m JOIN classrooms c ON c.id=m.classroom WHERE c.owner=?').bind(id).all()
  ]);return {user:id,classes:classes.results,tasks:tasks.results.map(parse),drafts:drafts.results,submissions:submissions.results.map(parse),resources:resources.results,attempts:attempts.results,members:members.results,aiReady:false};}
 function error(e:unknown){console.error('lab-api',e instanceof Error?e.message:e);return Response.json({error:e instanceof Error?e.message:'服务暂时不可用'}, {status:e instanceof HttpError?e.status:500});}
-export async function GET(req:Request){try{const u=await identity(req);await init(u.id,u.name);return Response.json(await getData(u.id));}catch(e){return error(e);}}
+export async function GET(req:Request){try{const u=await identity(req);if(u.role==='teacher')await init(u.id,u.name);return Response.json({...await getData(u.id),name:u.name,role:u.role});}catch(e){return error(e);}}
 export async function POST(req:Request){try{
  const origin=req.headers.get('origin');if(origin&&origin!==new URL(req.url).origin)throw new HttpError(403,'请求来源不匹配。');
- const u=await identity(req);if(Number(req.headers.get('content-length')||0)>150000)throw new HttpError(413,'提交内容过大。');const raw=await req.text();if(raw.length>100000)throw new HttpError(413,'提交内容过大。');let b:Row;try{b=JSON.parse(raw);}catch{throw new HttpError(400,'提交格式错误。');}if(!b||typeof b!=='object'||Array.isArray(b))throw new HttpError(400,'请求内容必须是对象。');await init(u.id,u.name);const db=database();
+ if(Number(req.headers.get('content-length')||0)>150000)throw new HttpError(413,'提交内容过大。');const raw=await req.text();if(raw.length>100000)throw new HttpError(413,'提交内容过大。');let b:Row;try{b=JSON.parse(raw);}catch{throw new HttpError(400,'提交格式错误。');}if(!b||typeof b!=='object'||Array.isArray(b))throw new HttpError(400,'请求内容必须是对象。');const db=database();
+ if(b.action==='login'){
+  const role=b.role==='teacher'?'teacher':'student',name=str(b.name,'姓名',40);
+  if(role==='teacher'){
+   const configured=(env as any).TEACHER_ACCESS_CODE?.trim();if(!configured||str(b.accessCode,'教师管理口令',100)!==configured)throw new HttpError(403,'教师管理口令不正确。');
+   const u={id:'teacher:primary',name,role} as const;await init(u.id,u.name);return Response.json({ok:true,role},{headers:{'Set-Cookie':await sessionCookie(u)}});
+  }
+  const studentNo=str(b.studentNo,'学号',40),code=str(b.classCode,'班级码',30).toUpperCase();const c=await db.prepare('SELECT * FROM classrooms WHERE code=?').bind(code).first<Row>();if(!c)throw new HttpError(404,'班级码无效，请向教师确认。');const id=await stableStudentId(c.id,studentNo);const u={id,name,role,classroom:c.id} as const;await db.prepare('INSERT INTO members (id,classroom,user,name) VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name').bind(`${c.id}:${id}`,c.id,id,name).run();return Response.json({ok:true,role},{headers:{'Set-Cookie':await sessionCookie(u)}});
+ }
+ if(b.action==='logout')return Response.json({ok:true},{headers:{'Set-Cookie':clearSessionCookie()}});
+ const u=await identity(req);if(u.role==='teacher')await init(u.id,u.name);
  if(b.action==='join'){const c=await db.prepare('SELECT * FROM classrooms WHERE code=?').bind(str(b.code,'班级码',30).toUpperCase()).first<Row>();if(!c)throw new HttpError(404,'班级码无效。');await db.prepare('INSERT OR IGNORE INTO members (id,classroom,user,name) VALUES (?,?,?,?)').bind(`${c.id}:${u.id}`,c.id,u.id,u.name).run();return Response.json({ok:true});}
  if(b.action==='task'){const c=await ownerClass(b.classroom,u.id);const title=str(b.title,'任务名称',120),genre=str(b.genre,'文种',20);if(!genres.includes(genre))throw new HttpError(400,'文种无效。');let rubric:number[];try{rubric=validateRubric(b.rubric);}catch(e){throw new HttpError(400,(e as Error).message);}const deadline=b.deadline?str(b.deadline,'截止日期',40):'';if(deadline&&(!Number.isFinite(Date.parse(deadline))||Date.parse(deadline)<Date.now()))throw new HttpError(400,'截止时间应晚于当前时间。');const id=uid();await db.prepare('INSERT INTO tasks (id,classroom,title,genre,background,requirements,deadline,rubric,level,created) VALUES (?,?,?,?,?,?,?,?,?,?)').bind(id,c.id,title,genre,str(b.background,'情景材料'),str(b.requirements,'写作要求'),deadline,JSON.stringify(rubric),str(b.level,'难度',20),now()).run();return Response.json({ok:true,id});}
  if(['draft','check','submit'].includes(b.action)){const task=await getTask(b.task,u.id);if(typeof b.content!=='string'||b.content.length>20000)throw new HttpError(400,'正文不得超过 20000 字。');const content=b.content;const did=`${u.id}:${task.id}`;

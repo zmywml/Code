@@ -3,7 +3,7 @@ declare namespace Cloudflare {
     DB?: D1Database;
     BUCKET?: R2Bucket;
     LOCAL_PREVIEW?: string;
-    CF_ACCESS_TEAM_DOMAIN?: string;
-    CF_ACCESS_AUD?: string;
+    APP_SESSION_SECRET?: string;
+    TEACHER_ACCESS_CODE?: string;
   }
 }

@@ -3,7 +3,7 @@ import {FileText} from 'lucide-react';
 import {Select,SelectTrigger,SelectValue,SelectContent,SelectItem} from '@/components/ui/select';
 import {dimensions} from '@/lib/content';
 export type R=Record<string,any>;
-export async function api(body?:R){const r=await fetch('/api/lab',{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});const j=await r.json() as R;if(!r.ok)throw new Error(j.error||'请求未完成，请重试。');return j;}
+export async function api(body?:R){const r=await fetch('/api/lab',{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});const j=await r.json() as R;if(!r.ok){const e=new Error(j.error||'请求未完成，请重试。') as Error&{status:number};e.status=r.status;throw e;}return j;}
 export function Picker({value,onChange,items,label}:{value:string;onChange:(v:string)=>void;items:string[];label:string}){return <Select value={value} onValueChange={onChange}><SelectTrigger aria-label={label}><SelectValue placeholder={label}/></SelectTrigger><SelectContent>{items.map(v=><SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select>}
 export function Tag({children,color=''}:{children:React.ReactNode;color?:string}){return <span className={`tag ${color}`}>{children}</span>}
 export function Blank({text}:{text:string}){return <div className="blank"><FileText size={28}/><p>{text}</p></div>}
