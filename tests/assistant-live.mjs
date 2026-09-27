@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+const base=process.env.TEST_URL||'http://127.0.0.1:8790',code=process.env.TEST_TEACHER_CODE;
+assert.ok(code,'TEST_TEACHER_CODE is required');
+const post=(cookie,body)=>fetch(base+'/api/lab',{method:'POST',headers:{cookie,'content-type':'application/json'},body:JSON.stringify(body)});
+const login=await post('',{action:'login',role:'teacher',name:'AI助手测试教师',accessCode:code});
+assert.equal(login.status,200,await login.text());const cookie=login.headers.get('set-cookie')?.split(';')[0];assert.ok(cookie);
+const bootstrap=await fetch(base+'/api/lab',{headers:{cookie}}),data=await bootstrap.json();assert.equal(bootstrap.status,200,JSON.stringify(data));const task=data.tasks[0];assert.ok(task);
+await post(cookie,{action:'aiGuideReset',task:task.id});
+const guideRes=await post(cookie,{action:'aiGuideMessage',task:task.id,message:'请帮我先区分材料中的已知事实和待核实信息，不要代写全文。',content:'我准备写一篇调研报告。'}),guide=await guideRes.json();
+assert.equal(guideRes.status,200,JSON.stringify(guide));assert.equal(guide.userMessage.role,'user');assert.equal(guide.assistantMessage.role,'assistant');assert.ok(guide.assistantMessage.content.length>10);assert.ok(Array.isArray(guide.assistantMessage.actions));
+const histRes=await post(cookie,{action:'aiGuideHistory',task:task.id}),hist=await histRes.json();assert.equal(histRes.status,200,JSON.stringify(hist));assert.equal(hist.messages.length,2);
+const original='调研组走访了居民，并检查了排水设施，发现部分排水口存在堵塞问题。';
+const rewriteRes=await post(cookie,{action:'aiRewrite',task:task.id,original,mode:'formal'}),rewrite=await rewriteRes.json();
+assert.equal(rewriteRes.status,200,JSON.stringify(rewrite));assert.ok(rewrite.revisedText.length>5);assert.ok(Array.isArray(rewrite.changes));
+const accept=await post(cookie,{action:'aiRewriteAccept',id:rewrite.id});assert.equal(accept.status,200,await accept.text());
+await post(cookie,{action:'aiGuideReset',task:task.id});
+console.log(`PASS AI写作助手：连续引导、历史恢复、选段润色、采纳记录均正常；润色结果 ${rewrite.revisedText.length} 字`);
